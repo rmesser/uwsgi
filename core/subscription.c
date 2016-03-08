@@ -172,14 +172,21 @@ struct uwsgi_subscribe_node *uwsgi_get_subscribe_node(struct uwsgi_subscribe_slo
 		if ((node->len == 0 && (subscription_age > uwsgi.subscription_tolerance_inactive)) || (node->len > 0 && (subscription_age > uwsgi.subscription_tolerance))) {
 			if (node->death_mark == 0) {
 				if (node->len > 0) {
-					uwsgi_log("[uwsgi-subscription for pid %d] %.*s => marking %.*s as failed (no announce received in %d seconds)\n", (int) uwsgi.mypid, (int) keylen, key, (int) node->len, node->name, uwsgi.subscription_tolerance);
+					if (uwsgi.subscription_restart_failed) {
+						uwsgi_log("[uwsgi-subscription for pid %d] attempting restart for %.*s (no announce received in %d seconds)\n", (int) uwsgi.mypid, (int) node->len, node->name, uwsgi.subscription_tolerance);
+						node->len = 0;
+					} else {
+						uwsgi_log("[uwsgi-subscription for pid %d] %.*s => marking %.*s as failed (no announce received in %d seconds)\n", (int) uwsgi.mypid, (int) keylen, key, (int) node->len, node->name, uwsgi.subscription_tolerance);
+					}
 				}
 				else if (node->vassal_len > 0) {
 					uwsgi_log("[uwsgi-subscription for pid %d] %.*s => marking vassal %.*s as failed (no announce received in %d seconds)\n", (int) uwsgi.mypid, (int) keylen, key, (int) node->vassal_len, node->vassal, uwsgi.subscription_tolerance_inactive);
 				}
 			}
-			node->failcnt++;
-			node->death_mark = 1;
+			if (!uwsgi.subscription_restart_failed) {
+				node->failcnt++;
+				node->death_mark = 1;
+			}
 		}
 		// do i need to remove the node ?
 		if (node->death_mark && node->reference == 0) {

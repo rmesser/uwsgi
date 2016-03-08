@@ -2836,6 +2836,7 @@ struct uwsgi_server {
 	int subscription_clear_on_shutdown;
 
 	int subscription_tolerance_inactive;
+	int subscription_restart_failed;
 };
 
 struct uwsgi_rpc {
